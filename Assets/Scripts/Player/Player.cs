@@ -69,8 +69,13 @@ public class Player : MonoBehaviour {
 			}
 
 			// Disable visual
-			foreach (var ren in shieldVisual.GetComponentsInChildren<Renderer>())
+			foreach (var ren in shieldVisual.GetComponentsInChildren<MeshRenderer>())
 				ren.enabled = false;
+
+			foreach (var ps in shieldVisual.GetComponentsInChildren<ParticleSystem>()) {
+				var em = ps.emission;
+				em.enabled = false;
+			}
 		}
 		#endregion
 
@@ -90,6 +95,11 @@ public class Player : MonoBehaviour {
 				// Enable visual
 				foreach (var ren in shieldVisual.GetComponentsInChildren<Renderer>())
 					ren.enabled = true;
+
+				foreach (var ps2 in shieldVisual.GetComponentsInChildren<ParticleSystem>()) {
+					var em2 = ps2.emission;
+					em2.enabled = true;
+				}
 			}
 		}
 		#endregion
