@@ -75,6 +75,7 @@ public class Player : MonoBehaviour {
 			foreach (var ps in shieldVisual.GetComponentsInChildren<ParticleSystem>()) {
 				var em = ps.emission;
 				em.enabled = false;
+				ps.Clear();
 			}
 		}
 		#endregion
