@@ -79,7 +79,7 @@ public class Player : MonoBehaviour {
 			bool old = inRange;
 			inRange = (shield.transform.position - transform.position).xz().magnitude <= pickupRange;
 			if (inRange && !old) {
-				var ps = shield.GetComponent<ParticleSystem>();
+				var ps = shield.GetComponentInChildren<ParticleSystem>();
 				ps.transform.parent = null;
 				var em = ps.emission;
 				em.enabled = false;
