@@ -57,7 +57,7 @@ public class Player : MonoBehaviour {
 
 		#region Shield shooting
 		if (armed && Input.GetButtonDown(INPUT_FIRE)) {
-			GameObject clone = Instantiate(shieldPrefab, transform.position.new_y(.5f), transform.rotation) as GameObject;
+			GameObject clone = Instantiate(shieldPrefab, shieldCenter.position, shieldCenter.rotation) as GameObject;
 			
 			shield = clone.GetComponent<Shield>();
 			shield.owner = this;
