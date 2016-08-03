@@ -15,7 +15,7 @@ public class Player : MonoBehaviour {
 	public float speed = 1200;
 	[Header("Shield")]
 	public GameObject shieldPrefab;
-	public Transform shieldVisual;
+	public Transform shieldCenter;
 	public float pickupRange = 2;
 
 	private Rigidbody body;
@@ -45,13 +45,14 @@ public class Player : MonoBehaviour {
 		#endregion
 
 		#region Rotation
+		body.angularVelocity = Vector3.zero;
+		transform.eulerAngles = Vector3.zero;
+
 		RaycastHit hit;
 		Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 		if (Physics.Raycast(ray, out hit)) {
-
-			transform.eulerAngles = new Vector3(0, (hit.point - transform.position).zx().ToDegrees(), 0);
-		}
-			
+			shieldCenter.transform.eulerAngles = new Vector3(0, (hit.point - shieldCenter.transform.position).zx().ToDegrees(), 0);
+		}	
 		#endregion
 
 		#region Shield shooting
@@ -69,10 +70,10 @@ public class Player : MonoBehaviour {
 			}
 
 			// Disable visual
-			foreach (var ren in shieldVisual.GetComponentsInChildren<MeshRenderer>())
+			foreach (var ren in shieldCenter.GetComponentsInChildren<MeshRenderer>())
 				ren.enabled = false;
 
-			foreach (var ps in shieldVisual.GetComponentsInChildren<ParticleSystem>()) {
+			foreach (var ps in shieldCenter.GetComponentsInChildren<ParticleSystem>()) {
 				var em = ps.emission;
 				em.enabled = false;
 				ps.Clear();
@@ -94,10 +95,10 @@ public class Player : MonoBehaviour {
 				Destroy(shield.gameObject);
 
 				// Enable visual
-				foreach (var ren in shieldVisual.GetComponentsInChildren<MeshRenderer>())
+				foreach (var ren in shieldCenter.GetComponentsInChildren<MeshRenderer>())
 					ren.enabled = true;
 
-				foreach (var ps2 in shieldVisual.GetComponentsInChildren<ParticleSystem>()) {
+				foreach (var ps2 in shieldCenter.GetComponentsInChildren<ParticleSystem>()) {
 					var em2 = ps2.emission;
 					em2.enabled = true;
 				}
