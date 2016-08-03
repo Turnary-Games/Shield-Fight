@@ -403,8 +403,7 @@ MonoBehaviour:
   speed: 1200
   shieldPrefab: {fileID: 1000011095655050, guid: e5a946e4d83758342a2937ab62ff0d76,
     type: 2}
-  shieldVisual: {fileID: 4000012447844100}
-  shieldSpeed: 2500
+  shieldCenter: {fileID: 0}
   pickupRange: 5
 --- !u!136 &136000013491465398
 CapsuleCollider:
