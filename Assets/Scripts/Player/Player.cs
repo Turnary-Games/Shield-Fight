@@ -93,7 +93,7 @@ public class Player : MonoBehaviour {
 				Destroy(shield.gameObject);
 
 				// Enable visual
-				foreach (var ren in shieldVisual.GetComponentsInChildren<Renderer>())
+				foreach (var ren in shieldVisual.GetComponentsInChildren<MeshRenderer>())
 					ren.enabled = true;
 
 				foreach (var ps2 in shieldVisual.GetComponentsInChildren<ParticleSystem>()) {
