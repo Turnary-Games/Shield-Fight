@@ -174,7 +174,7 @@ MonoBehaviour:
   raycastLayer:
     serializedVersion: 2
     m_Bits: 2
-  shieldPrefab: {fileID: 1000011095655050, guid: e5a946e4d83758342a2937ab62ff0d76,
+  shieldPrefab: {fileID: 1000013676454190, guid: d279421af78b64942a3568125d9d216b,
     type: 2}
   shieldCenter: {fileID: 4000011020113216}
   pickupRange: 2

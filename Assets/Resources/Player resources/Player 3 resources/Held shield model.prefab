@@ -22,7 +22,7 @@ GameObject:
   - 33: {fileID: 33000012207910398}
   - 23: {fileID: 23000013876949846}
   m_Layer: 8
-  m_Name: Shield model
+  m_Name: Held shield model
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

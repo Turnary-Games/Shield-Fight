@@ -7,27 +7,31 @@ public class Player : MonoBehaviour {
 	/*
 		CONSTANTS
 	*/
-	string INPUT_HORIZTONAL { get { return Globals.Player.GetInputHoriztonalName(player); } }
-	string INPUT_VERTICAL { get { return Globals.Player.GetInputVerticalName(player); } }
-	string INPUT_FIRE { get { return Globals.Player.GetInputFireName(player); } }
-	string INPUT_PUSH { get { return Globals.Player.GetInputPushName(player); } }
-
-	string PATH_CHARACTER_MODEL { get { return Globals.Player.GetPathPlayerCharacterModel(player); } }
-	string PATH_SHIELD_MODEL { get { return Globals.Player.GetPathPlayerShieldModel(player); } }
-	string PATH_SHIELD_MATERIAL { get { return Globals.Player.GetPathPlayerShieldMaterial(player); } }
-
-	int LAYER_PLAYER { get { return Globals.Player.GetLayerPlayer(player); } }
-	int LAYER_HELD_SHIELD { get { return Globals.Player.GetLayerHeldShield(player); } }
-	int LAYER_THROWN_SHIELD { get { return Globals.Player.GetLayerThrownShield(player); } }
+	public const int NUM_OF_PLAYERS = 4;
+	
+	string INPUT_PREFIX { get {						return "P" + player + " ";												} }
+	string INPUT_HORIZTONAL { get {					return INPUT_PREFIX + "Horizontal";										} }
+	string INPUT_VERTICAL { get {					return INPUT_PREFIX + "Vertical";										} }
+	string INPUT_FIRE { get {						return INPUT_PREFIX + "Fire";											} }
+	string INPUT_PUSH { get {						return INPUT_PREFIX + "Push";											} }
+	
+	string PATH_BASE { get {						return "Player resources/Player " + player + " resources/";				} }
+	string PATH_CHARACTER_MODEL { get {				return PATH_BASE + "Player model";										} }
+	string PATH_SHIELD_HELD_MODEL { get {			return PATH_BASE + "Held shield model";									} }
+	string PATH_SHIELD_THROWN_MODEL { get {			return PATH_BASE + "Thrown shield model";								} }
 
 	[System.NonSerialized] public GameObject RESOURCE_CHARACTER_MODEL;
-	[System.NonSerialized] public GameObject RESOURCE_SHIELD_MODEL;
-	[System.NonSerialized] public Material RESOURCE_SHIELD_MATERIAL;
+	[System.NonSerialized] public GameObject RESOURCE_SHIELD_HELD_MODEL;
+	[System.NonSerialized] public GameObject RESOURCE_SHIELD_THROWN_MODEL;
+
+	int LAYER_PLAYER { get {						return LayerMask.NameToLayer("Player " + player);						} }
+	int LAYER_HELD_SHIELD { get {					return LayerMask.NameToLayer("Shield " + player);						} }
+	int LAYER_THROWN_SHIELD { get {					return LayerMask.NameToLayer("Player " + player);						} }
 
 	/*
 		PROPERTIES
 	*/
-	[Range(1, Globals.Player.NUM_OF_PLAYERS)]
+	[Range(1, NUM_OF_PLAYERS)]
 	public int player = 1;
 	public int health = 20;
 	[Header("Movement")]
@@ -65,15 +69,22 @@ public class Player : MonoBehaviour {
 
 		// Load resources
 		RESOURCE_CHARACTER_MODEL = Resources.Load(PATH_CHARACTER_MODEL) as GameObject;
-		RESOURCE_SHIELD_MODEL = Resources.Load(PATH_SHIELD_MODEL) as GameObject;
-		RESOURCE_SHIELD_MATERIAL = Resources.Load(PATH_SHIELD_MATERIAL) as Material;
+		RESOURCE_SHIELD_HELD_MODEL = Resources.Load(PATH_SHIELD_HELD_MODEL) as GameObject;
+		RESOURCE_SHIELD_THROWN_MODEL = Resources.Load(PATH_SHIELD_THROWN_MODEL) as GameObject;
 
 		// Spawn in model
 		GameObject clone;
 		
-		clone = Instantiate(RESOURCE_CHARACTER_MODEL, RESOURCE_CHARACTER_MODEL.transform.position, RESOURCE_CHARACTER_MODEL.transform.rotation) as GameObject;
+		clone = Instantiate(RESOURCE_CHARACTER_MODEL) as GameObject;
+		clone.transform.localPosition = RESOURCE_CHARACTER_MODEL.transform.localPosition;
+		clone.transform.localRotation = RESOURCE_CHARACTER_MODEL.transform.localRotation;
+		clone.transform.localScale = RESOURCE_CHARACTER_MODEL.transform.localScale;
 		clone.transform.SetParent(transform, false);
-		clone = Instantiate(RESOURCE_SHIELD_MODEL, RESOURCE_SHIELD_MODEL.transform.position, RESOURCE_SHIELD_MODEL.transform.rotation) as GameObject;
+
+		clone = Instantiate(RESOURCE_SHIELD_HELD_MODEL) as GameObject;
+		clone.transform.localPosition = RESOURCE_SHIELD_HELD_MODEL.transform.localPosition;
+		clone.transform.localRotation = RESOURCE_SHIELD_HELD_MODEL.transform.localRotation;
+		clone.transform.localScale = RESOURCE_SHIELD_HELD_MODEL.transform.localScale;
 		clone.transform.SetParent(shieldCenter, false);
 
 		// Change layer
@@ -103,13 +114,13 @@ public class Player : MonoBehaviour {
 		Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 		if (Physics.Raycast(ray, out hit, Mathf.Infinity, raycastLayer)) {
 			shieldCenter.transform.eulerAngles = new Vector3(0, (hit.point - shieldCenter.transform.position).zx().ToDegrees(), 0);
-		}	
+		}
 		#endregion
 
 		#region Shield shooting
 		if (armed && Input.GetButtonDown(INPUT_FIRE)) {
 			GameObject clone = Instantiate(shieldPrefab, shieldCenter.position, shieldCenter.rotation) as GameObject;
-			
+
 			// Add reference to /this/
 			shield = clone.GetComponent<Shield>();
 			shield.owner = this;

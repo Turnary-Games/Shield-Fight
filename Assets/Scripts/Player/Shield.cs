@@ -12,19 +12,27 @@ public class Shield : MonoBehaviour {
 	public int maxNumberOfBounces = 8;
 	public float maxTime = 5;
 	public float dragAtLastBounce = 2;
+	[Header("Floating-pos")]
+	public float minY = 0;
+	public float maxY = 1;
 
 	private int bounces;
 	private float start;
 
 	void Start() {
+		if (!owner || !body) {
+			Destroy(gameObject);
+			return;
+		}
+		
 		start = Time.time;
-
-		if (owner) {
-			foreach (var ren in GetComponentsInChildren<MeshRenderer>()) {
-				ren.sharedMaterial = owner.RESOURCE_SHIELD_MATERIAL;
-			}
-		} else
-			Debug.LogError("This shield lives without it's owner!");
+		
+		// Spawn in model
+		GameObject clone = Instantiate(owner.RESOURCE_SHIELD_THROWN_MODEL) as GameObject;
+		clone.transform.localPosition = owner.RESOURCE_SHIELD_THROWN_MODEL.transform.localPosition;
+		clone.transform.localRotation = owner.RESOURCE_SHIELD_THROWN_MODEL.transform.localRotation;
+		clone.transform.localScale = owner.RESOURCE_SHIELD_THROWN_MODEL.transform.localScale;
+		clone.transform.SetParent(transform, false);
 	}
 
 	void FixedUpdate() {
@@ -32,6 +40,10 @@ public class Shield : MonoBehaviour {
 			body.velocity = body.velocity.normalized * speed / body.mass;
 		else if (body)
 			body.drag = dragAtLastBounce;
+	}
+
+	void Update() {
+		transform.position = transform.position.new_y(Mathf.Lerp(minY, maxY, body.velocity.magnitude / (speed / body.mass)));
 	}
 
 	void OnCollisionEnter(Collision col) {
