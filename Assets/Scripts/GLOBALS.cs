@@ -16,6 +16,21 @@ namespace Globals {
 		public const string INPUT_VERTICAL_SUFFIX = " Vertical";
 		public const string INPUT_FIRE_SUFFIX = " Fire";
 		public const string INPUT_PUSH_SUFFIX = " Push";
+
+
+		public static readonly Color[] COLORS = {
+		/* Player 1 */	Color.yellow,
+		/* Player 2 */	Color.magenta,
+		/* Player 3 */	Color.blue,
+		/* Player 4 */	Color.green
+		};
+
+		public const string RESOURCES_PATH = "Player resources";
+		public static string Get
+		public enum MODELS {
+			Cube,
+			Sphere,
+		}
 	}
 
 }

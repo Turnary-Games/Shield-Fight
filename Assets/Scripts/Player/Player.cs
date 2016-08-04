@@ -8,9 +8,11 @@ public class Player : MonoBehaviour {
 	string INPUT_VERTICAL { get { return Globals.Player.INPUT_PREFIX + player + Globals.Player.INPUT_VERTICAL_SUFFIX; } }
 	string INPUT_FIRE { get { return Globals.Player.INPUT_PREFIX + player + Globals.Player.INPUT_FIRE_SUFFIX; } }
 	string INPUT_PUSH { get { return Globals.Player.INPUT_PREFIX + player + Globals.Player.INPUT_PUSH_SUFFIX; } }
+	Color COLOR { get { return Globals.Player.COLORS[player - 1]; } }
 
 	[Range(1, Globals.Player.NUM_OF_PLAYERS)]
 	public int player = 1;
+	public int health = 20;
 	[Header("Movement")]
 	public float speed = 1200;
 	[Header("Shield")]

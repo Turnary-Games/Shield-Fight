@@ -38,7 +38,7 @@ GameObject:
   - 4: {fileID: 4000013823993052}
   - 33: {fileID: 33000012383636040}
   - 23: {fileID: 23000012317201788}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: model
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -72,7 +72,7 @@ GameObject:
   - 4: {fileID: 4000010536208428}
   - 198: {fileID: 198000011753423516}
   - 199: {fileID: 199000011914523512}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Particle System (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -87,7 +87,7 @@ GameObject:
   serializedVersion: 4
   m_Component:
   - 4: {fileID: 4000012367111310}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Center
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -120,7 +120,7 @@ GameObject:
   - 4: {fileID: 4000011432707284}
   - 198: {fileID: 198000011699900838}
   - 199: {fileID: 199000012137846398}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Particle System
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -136,7 +136,7 @@ GameObject:
   m_Component:
   - 4: {fileID: 4000011373473658}
   - 64: {fileID: 64000011271014530}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Hitbox
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -365,6 +365,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: 1
+  health: 20
   speed: 60
   shieldPrefab: {fileID: 1000011095655050, guid: e5a946e4d83758342a2937ab62ff0d76,
     type: 2}

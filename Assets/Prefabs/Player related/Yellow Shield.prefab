@@ -24,7 +24,7 @@ GameObject:
   - 114: {fileID: 114000013535990624}
   m_Layer: 0
   m_Name: Yellow Shield
-  m_TagString: Shield
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -133,7 +133,7 @@ Transform:
   m_GameObject: {fileID: 1000013542402390}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.5, y: 0.05, z: 0.5}
+  m_LocalScale: {x: 0.5, y: 0.1, z: 0.5}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_Children: []
   m_Father: {fileID: 4000010947552258}
@@ -214,7 +214,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 1
   m_Constraints: 84
-  m_CollisionDetection: 1
+  m_CollisionDetection: 2
 --- !u!64 &64000012583639074
 MeshCollider:
   m_ObjectHideFlags: 1
