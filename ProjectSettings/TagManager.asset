@@ -13,28 +13,28 @@ TagManager:
   - UI
   - 
   - 
+  - Wall
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
   - Player 1
   - Player 2
   - Player 3
   - Player 4
   - 
   - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Shield 1
+  - Shield 2
+  - Shield 3
+  - Shield 4
   - 
   - 
   m_SortingLayers:

@@ -18,6 +18,13 @@ public class Shield : MonoBehaviour {
 
 	void Start() {
 		start = Time.time;
+
+		if (owner) {
+			foreach (var ren in GetComponentsInChildren<MeshRenderer>()) {
+				ren.sharedMaterial = owner.RESOURCE_SHIELD_MATERIAL;
+			}
+		} else
+			Debug.LogError("This shield lives without it's owner!");
 	}
 
 	void FixedUpdate() {
@@ -27,8 +34,24 @@ public class Shield : MonoBehaviour {
 			body.drag = dragAtLastBounce;
 	}
 
-	void OnCollisionEnter() {
+	void OnCollisionEnter(Collision col) {
 		bounces++;
+
+		var main = col.collider.GetMainObject();
+		var player = main.GetComponent<Player>();
+
+		if (player != null && player != owner) { 
+			
+			// Check if we collided with the player collider, not the shield
+			if (col.collider == player.playerCollider) {
+				player.health--;
+				owner.PickupShield();
+			}
+
+			//if (col.collider == player.heldShieldCollider) {
+			//	// ...
+			//}
+		}
 	}
 	
 }
