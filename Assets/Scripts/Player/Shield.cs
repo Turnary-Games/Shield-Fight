@@ -16,6 +16,9 @@ public class Shield : MonoBehaviour {
 	public float minY = 0;
 	public float maxY = 1;
 
+	[Header("Partycles")]
+	public GameObject particlePrefab;
+
 	private int bounces;
 	private float start;
 
@@ -26,13 +29,9 @@ public class Shield : MonoBehaviour {
 		}
 		
 		start = Time.time;
-		
+
 		// Spawn in model
-		GameObject clone = Instantiate(owner.RESOURCE_SHIELD_THROWN_MODEL) as GameObject;
-		clone.transform.localPosition = owner.RESOURCE_SHIELD_THROWN_MODEL.transform.localPosition;
-		clone.transform.localRotation = owner.RESOURCE_SHIELD_THROWN_MODEL.transform.localRotation;
-		clone.transform.localScale = owner.RESOURCE_SHIELD_THROWN_MODEL.transform.localScale;
-		clone.transform.SetParent(transform, false);
+		owner.resources.RESOURCE_SHIELD_THROWN_MODEL.Clone().transform.SetParent(transform, false);
 	}
 
 	void FixedUpdate() {
@@ -52,14 +51,19 @@ public class Shield : MonoBehaviour {
 		var main = col.collider.GetMainObject();
 		var player = main.GetComponent<Player>();
 
-		if (player != null && player != owner) { 
-			
+		if (player != null && player != owner) {
+
+			// Collided with player, TIME FOR PARTYCLES
+			GameObject clone = Instantiate(particlePrefab, transform.position, transform.rotation) as GameObject;
+			Destroy(clone, 2);
+
 			// Check if we collided with the player collider, not the shield
 			if (col.collider == player.playerCollider) {
 				player.health--;
 				owner.PickupShield();
 			}
 
+			// Check if we collided with the held shield, not the player body
 			//if (col.collider == player.heldShieldCollider) {
 			//	// ...
 			//}

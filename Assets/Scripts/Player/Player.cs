@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using ResourceDatabase;
 
 [RequireComponent(typeof(Rigidbody))]
 public class Player : MonoBehaviour {
@@ -14,19 +15,14 @@ public class Player : MonoBehaviour {
 	string INPUT_VERTICAL { get {					return INPUT_PREFIX + "Vertical";										} }
 	string INPUT_FIRE { get {						return INPUT_PREFIX + "Fire";											} }
 	string INPUT_PUSH { get {						return INPUT_PREFIX + "Push";											} }
-	
-	string PATH_BASE { get {						return "Player resources/Player " + player + " resources/";				} }
-	string PATH_CHARACTER_MODEL { get {				return PATH_BASE + "Player model";										} }
-	string PATH_SHIELD_HELD_MODEL { get {			return PATH_BASE + "Held shield model";									} }
-	string PATH_SHIELD_THROWN_MODEL { get {			return PATH_BASE + "Thrown shield model";								} }
-
-	[System.NonSerialized] public GameObject RESOURCE_CHARACTER_MODEL;
-	[System.NonSerialized] public GameObject RESOURCE_SHIELD_HELD_MODEL;
-	[System.NonSerialized] public GameObject RESOURCE_SHIELD_THROWN_MODEL;
 
 	int LAYER_PLAYER { get {						return LayerMask.NameToLayer("Player " + player);						} }
 	int LAYER_HELD_SHIELD { get {					return LayerMask.NameToLayer("Shield " + player);						} }
 	int LAYER_THROWN_SHIELD { get {					return LayerMask.NameToLayer("Player " + player);						} }
+
+	public bool initialized { get {					return resources != null && resources.PLAYER_ID == player;				} }
+
+	public PlayerResource resources;
 
 	/*
 		PROPERTIES
@@ -52,7 +48,6 @@ public class Player : MonoBehaviour {
 	private Shield shield;
 	private bool armed { get { return shield == null; } }
 	private bool inRange = true;
-
 	
 	/*
 		METHODS
@@ -67,36 +62,12 @@ public class Player : MonoBehaviour {
 	void Awake() {
 		body = GetComponent<Rigidbody>();
 
-		// Load resources
-		RESOURCE_CHARACTER_MODEL = Resources.Load(PATH_CHARACTER_MODEL) as GameObject;
-		RESOURCE_SHIELD_HELD_MODEL = Resources.Load(PATH_SHIELD_HELD_MODEL) as GameObject;
-		RESOURCE_SHIELD_THROWN_MODEL = Resources.Load(PATH_SHIELD_THROWN_MODEL) as GameObject;
-
-		// Spawn in model
-		GameObject clone;
-		
-		clone = Instantiate(RESOURCE_CHARACTER_MODEL) as GameObject;
-		clone.transform.localPosition = RESOURCE_CHARACTER_MODEL.transform.localPosition;
-		clone.transform.localRotation = RESOURCE_CHARACTER_MODEL.transform.localRotation;
-		clone.transform.localScale = RESOURCE_CHARACTER_MODEL.transform.localScale;
-		clone.transform.SetParent(transform, false);
-
-		clone = Instantiate(RESOURCE_SHIELD_HELD_MODEL) as GameObject;
-		clone.transform.localPosition = RESOURCE_SHIELD_HELD_MODEL.transform.localPosition;
-		clone.transform.localRotation = RESOURCE_SHIELD_HELD_MODEL.transform.localRotation;
-		clone.transform.localScale = RESOURCE_SHIELD_HELD_MODEL.transform.localScale;
-		clone.transform.SetParent(shieldCenter, false);
-
-		// Change layer
-		foreach(var t in GetComponentsInChildren<Transform>()) {
-			if (t.IsChildOf(shieldCenter))
-				t.gameObject.layer = LAYER_HELD_SHIELD;
-			else
-				t.gameObject.layer = LAYER_PLAYER;
-		}
+		InitializePlayer();
 	}
 	
 	void Update () {
+		if (!initialized) return;
+
 		#region Movement
 		Vector2 axis = new Vector2(Input.GetAxisRaw(INPUT_HORIZTONAL), Input.GetAxisRaw(INPUT_VERTICAL));
 		axis.Scale(axis.normalized.Abs());
@@ -160,6 +131,7 @@ public class Player : MonoBehaviour {
 	}
 
 	public void PickupShield() {
+		if (!initialized) return;
 		if (armed) return;
 
 		// Move particlesystem away
@@ -188,4 +160,58 @@ public class Player : MonoBehaviour {
 		inRange = true;
 	}
 
+	public void InitializePlayer() {
+		ResetPlayer();
+
+		// Load resources
+		if (resources == null || resources.PLAYER_ID != player) {
+			resources = PlayerResource.FetchPlayerResources(player);
+		}
+
+		// Spawn in model
+		resources.RESOURCE_CHARACTER_MODEL.Clone().transform.SetParent(transform, false);
+		resources.RESOURCE_SHIELD_HELD_MODEL.Clone().transform.SetParent(shieldCenter, false);
+
+		// Change layer
+		foreach (var t in GetComponentsInChildren<Transform>()) {
+			if (t.IsChildOf(shieldCenter))
+				t.gameObject.layer = LAYER_HELD_SHIELD;
+			else
+				t.gameObject.layer = LAYER_PLAYER;
+		}
+	}
+
+	public void ResetPlayer() {
+		// Remove model if any
+		foreach (var t in GetComponentsInChildren<Transform>()) {
+			if (t != shieldCenter
+			&& t != playerCollider.transform
+			&& t != heldShieldCollider.transform
+			&& t != transform
+			&& t != null) {
+				DestroyImmediate(t.gameObject);
+			}
+		}
+
+		// Change layer
+		foreach (var t in GetComponentsInChildren<Transform>()) {
+			t.gameObject.layer = 0;
+		}
+
+		resources = null;
+	}
+
+	public bool IsReset() {
+		// Check for inregularities
+		foreach (var t in GetComponentsInChildren<Transform>()) {
+			if (t != shieldCenter
+			&& t != playerCollider.transform
+			&& t != heldShieldCollider.transform
+			&& t != transform) {
+				return false;
+			}
+		}
+
+		return true;
+	}
 }

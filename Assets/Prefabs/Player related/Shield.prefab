@@ -37,7 +37,6 @@ GameObject:
   - 4: {fileID: 4000014115032392}
   - 54: {fileID: 54000013558811306}
   - 114: {fileID: 114000010223719674}
-  - 114: {fileID: 114000011737685242}
   m_Layer: 0
   m_Name: Shield
   m_TagString: Untagged
@@ -116,16 +115,5 @@ MonoBehaviour:
   dragAtLastBounce: 10
   minY: 0.1
   maxY: 1
---- !u!114 &114000011737685242
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1000013676454190}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b2c247171f9c8874c83e9809b8e394b2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  shieldParticlePrefab: {fileID: 1000012195085678, guid: 2244dfb23eb192046aa18e9baf642052,
+  particlePrefab: {fileID: 1000012195085678, guid: 2244dfb23eb192046aa18e9baf642052,
     type: 2}

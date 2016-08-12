@@ -299,3 +299,13 @@ public static class ColliderExstensions {
 		return col.attachedRigidbody ? col.attachedRigidbody.gameObject : col.gameObject;
 	}
 }
+
+public static class GameObjectExtensions {
+	public static GameObject Clone(this GameObject go) {
+		GameObject clone = GameObject.Instantiate(go);
+		clone.transform.localPosition = go.transform.localPosition;
+		clone.transform.localRotation = go.transform.localRotation;
+		clone.transform.localScale = go.transform.localScale;
+		return clone;
+	}
+}
