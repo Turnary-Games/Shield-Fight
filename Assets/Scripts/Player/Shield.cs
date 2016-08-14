@@ -27,6 +27,9 @@ public class Shield : MonoBehaviour {
 	private float start;
 	private bool doneBouncing = false;
 
+	[System.NonSerialized]
+	public bool attracting = false;
+
 	void Start() {
 		if (!owner || !body) {
 			Destroy(gameObject);
@@ -42,7 +45,8 @@ public class Shield : MonoBehaviour {
 	void FixedUpdate() {
 		#region Move towards player
 		if (doneBouncing) {
-			if (Input.GetButton(owner.INPUT_ATTRACT)) {
+			attracting = Input.GetButton(owner.INPUT_FIRE) || Input.GetButton(owner.INPUT_PUSH);
+			if (attracting) {
 				// Calculate drag
 				body.drag = Mathf.MoveTowards(body.drag, 0, Time.deltaTime * dragAtLastBounce);
 

@@ -15,7 +15,6 @@ public class Player : MonoBehaviour {
 	public string INPUT_VERTICAL { get {					return INPUT_PREFIX + "Vertical";										} }
 	public string INPUT_FIRE { get {						return INPUT_PREFIX + "Fire";											} }
 	public string INPUT_PUSH { get {						return INPUT_PREFIX + "Push";											} }
-	public string INPUT_ATTRACT { get {						return INPUT_FIRE;														} }
 
 	public int LAYER_PLAYER { get {							return LayerMask.NameToLayer("Player " + player);						} }
 	public int LAYER_HELD_SHIELD { get {					return LayerMask.NameToLayer("Shield " + player);						} }
@@ -39,9 +38,15 @@ public class Player : MonoBehaviour {
 	public GameObject shieldPrefab;
 	public Transform shieldCenter;
 	public float pickupRange = 2;
+	[Header("Pushing")]
+	public float pushCooldown = .5f;
+	public float pushImpulseVsShield = 75f;
+	public float pushImpulseVsPlayer = 200f;
+	public float pushImpulseVsOther = 200f;
 	[Header("Collision colliders collisions collide")]
 	public Collider heldShieldCollider;
 	public Collider playerCollider;
+	public Collider pushTrigger;
 
 	/*
 		PRIVATE VARIABLES
@@ -50,7 +55,9 @@ public class Player : MonoBehaviour {
 	private Shield shield;
 	private bool armed { get { return shield == null; } }
 	private bool inRange = true;
-	
+	private float pushTimestamp = -Mathf.Infinity;
+	private ParticleSystem pushParticles;
+
 	/*
 		METHODS
 	*/
@@ -72,7 +79,7 @@ public class Player : MonoBehaviour {
 
 		#region Movement
 		// Cant move while attracting
-		if (!Input.GetButton(INPUT_ATTRACT)) {
+		if (shield == null || !shield.attracting) {
 			// Real simple; read input, add force from input.
 			Vector2 axis = new Vector2(Input.GetAxisRaw(INPUT_HORIZTONAL), Input.GetAxisRaw(INPUT_VERTICAL));
 			axis.Scale(axis.normalized.Abs());
@@ -115,6 +122,8 @@ public class Player : MonoBehaviour {
 				ren.enabled = false;
 
 			foreach (var ps in shieldCenter.GetComponentsInChildren<ParticleSystem>()) {
+				if (ps.transform.IsChildOf(pushTrigger.transform)) continue;
+
 				var em = ps.emission;
 				em.enabled = false;
 				ps.Clear();
@@ -134,6 +143,45 @@ public class Player : MonoBehaviour {
 			}
 		}
 		#endregion
+
+		#region Pushing
+		// Can push if it's off cooldown + shield is not thrown
+		bool canPush = Time.time - pushTimestamp > pushCooldown && armed;
+		if (canPush && Input.GetButtonDown(INPUT_PUSH)) {
+			StartCoroutine(PushCourotine());
+		}
+		#endregion
+	}
+
+	void OnTriggerEnter(Collider other) {
+		// Compared to many, we ignore if someone triggers us
+		if (other.isTrigger) return;
+
+		// Only proceed if it has a rigidbody
+		Rigidbody otherBody = other.attachedRigidbody;
+		if (otherBody) {
+			// Calculate which way to push 'em
+			Vector3 delta = otherBody.transform.position - transform.position;
+			delta.y = 0;
+
+			if (otherBody.GetComponent<Player>())
+				// Push away dat player
+				otherBody.AddForce(delta.normalized * pushImpulseVsPlayer, ForceMode.Impulse);
+			else if (otherBody.GetComponent<Shield>())
+				// Be'gone, foul plate!
+				otherBody.AddForce(delta.normalized * pushImpulseVsShield, ForceMode.Impulse);
+			else
+				// Get away from me unknown scrub!
+				otherBody.AddForce(delta.normalized * pushImpulseVsOther, ForceMode.Impulse);
+		}
+	}
+
+	IEnumerator PushCourotine() {
+		pushTimestamp = Time.time;
+		pushTrigger.enabled = true;
+		pushParticles.Play();
+		yield return new WaitForFixedUpdate();
+		pushTrigger.enabled = false;
 	}
 
 	public void PickupShield() {
@@ -155,6 +203,8 @@ public class Player : MonoBehaviour {
 			ren.enabled = true;
 
 		foreach (var ps2 in shieldCenter.GetComponentsInChildren<ParticleSystem>()) {
+			if (ps2.transform.IsChildOf(pushTrigger.transform)) continue;
+
 			var em2 = ps2.emission;
 			em2.enabled = true;
 		}
@@ -166,6 +216,7 @@ public class Player : MonoBehaviour {
 		inRange = true;
 	}
 
+	#region <METHODS> Initialization and resetting
 	public void InitializePlayer() {
 		ResetPlayer();
 
@@ -177,6 +228,8 @@ public class Player : MonoBehaviour {
 		// Spawn in model
 		resources.RESOURCE_CHARACTER_MODEL.Clone().transform.SetParent(transform, false);
 		resources.RESOURCE_SHIELD_HELD_MODEL.Clone().transform.SetParent(shieldCenter, false);
+		pushParticles = resources.RESOURCE_PUSH_PARTICLES.Clone().GetComponent<ParticleSystem>();
+		pushParticles.transform.SetParent(pushTrigger.transform, false);
 
 		// Change layer
 		foreach (var t in GetComponentsInChildren<Transform>()) {
@@ -190,11 +243,7 @@ public class Player : MonoBehaviour {
 	public void ResetPlayer() {
 		// Remove model if any
 		foreach (var t in GetComponentsInChildren<Transform>()) {
-			if (t != shieldCenter
-			&& t != playerCollider.transform
-			&& t != heldShieldCollider.transform
-			&& t != transform
-			&& t != null) {
+			if (t != null && IsItExtra(t)) {
 				DestroyImmediate(t.gameObject);
 			}
 		}
@@ -210,14 +259,22 @@ public class Player : MonoBehaviour {
 	public bool IsReset() {
 		// Check for inregularities
 		foreach (var t in GetComponentsInChildren<Transform>()) {
-			if (t != shieldCenter
-			&& t != playerCollider.transform
-			&& t != heldShieldCollider.transform
-			&& t != transform) {
+			if (IsItExtra(t)) {
 				return false;
 			}
 		}
 
 		return true;
 	}
+
+	public bool IsItExtra(Transform other) {
+		if (other == transform) return false;
+		if (other == shieldCenter) return false;
+		if (playerCollider && other == playerCollider.transform) return false;
+		if (heldShieldCollider && other == heldShieldCollider.transform) return false;
+		if (pushTrigger && other == pushTrigger.transform) return false;
+
+		return true;
+	}
+	#endregion
 }
