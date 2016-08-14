@@ -109,10 +109,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4fb093d5c38abc9458f869555c8aaf49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 100
+  speed: 50
+  attractSpeed: 35
   maxNumberOfBounces: 200
   maxTime: 0.4
   dragAtLastBounce: 10
+  minSpeed: 10
   minY: 0.1
   maxY: 1
   particlePrefab: {fileID: 1000012195085678, guid: 2244dfb23eb192046aa18e9baf642052,

@@ -10,18 +10,20 @@ public class Player : MonoBehaviour {
 	*/
 	public const int NUM_OF_PLAYERS = 4;
 	
-	string INPUT_PREFIX { get {						return "P" + player + " ";												} }
-	string INPUT_HORIZTONAL { get {					return INPUT_PREFIX + "Horizontal";										} }
-	string INPUT_VERTICAL { get {					return INPUT_PREFIX + "Vertical";										} }
-	string INPUT_FIRE { get {						return INPUT_PREFIX + "Fire";											} }
-	string INPUT_PUSH { get {						return INPUT_PREFIX + "Push";											} }
+	public string INPUT_PREFIX { get {						return "P" + player + " ";												} }
+	public string INPUT_HORIZTONAL { get {					return INPUT_PREFIX + "Horizontal";										} }
+	public string INPUT_VERTICAL { get {					return INPUT_PREFIX + "Vertical";										} }
+	public string INPUT_FIRE { get {						return INPUT_PREFIX + "Fire";											} }
+	public string INPUT_PUSH { get {						return INPUT_PREFIX + "Push";											} }
+	public string INPUT_ATTRACT { get {						return INPUT_FIRE;														} }
 
-	int LAYER_PLAYER { get {						return LayerMask.NameToLayer("Player " + player);						} }
-	int LAYER_HELD_SHIELD { get {					return LayerMask.NameToLayer("Shield " + player);						} }
-	int LAYER_THROWN_SHIELD { get {					return LayerMask.NameToLayer("Player " + player);						} }
+	public int LAYER_PLAYER { get {							return LayerMask.NameToLayer("Player " + player);						} }
+	public int LAYER_HELD_SHIELD { get {					return LayerMask.NameToLayer("Shield " + player);						} }
+	public int LAYER_THROWN_SHIELD { get {					return LayerMask.NameToLayer("Player " + player);						} }
 
-	public bool initialized { get {					return resources != null && resources.PLAYER_ID == player;				} }
+	public bool initialized { get {							return resources != null && resources.PLAYER_ID == player;				} }
 
+	[System.NonSerialized]
 	public PlayerResource resources;
 
 	/*
@@ -69,12 +71,16 @@ public class Player : MonoBehaviour {
 		if (!initialized) return;
 
 		#region Movement
-		Vector2 axis = new Vector2(Input.GetAxisRaw(INPUT_HORIZTONAL), Input.GetAxisRaw(INPUT_VERTICAL));
-		axis.Scale(axis.normalized.Abs());
+		// Cant move while attracting
+		if (!Input.GetButton(INPUT_ATTRACT)) {
+			// Real simple; read input, add force from input.
+			Vector2 axis = new Vector2(Input.GetAxisRaw(INPUT_HORIZTONAL), Input.GetAxisRaw(INPUT_VERTICAL));
+			axis.Scale(axis.normalized.Abs());
 
-		Vector3 movement = axis.xzy(0) * speed * Time.deltaTime;
+			Vector3 movement = axis.xzy(0) * speed * Time.deltaTime;
 
-		body.AddForce(movement, ForceMode.VelocityChange);
+			body.AddForce(movement, ForceMode.VelocityChange);
+		}
 		#endregion
 
 		#region Rotation
