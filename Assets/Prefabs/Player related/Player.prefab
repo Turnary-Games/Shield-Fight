@@ -38,6 +38,9 @@ GameObject:
   - 4: {fileID: 4000012851296462}
   - 54: {fileID: 54000011387798318}
   - 114: {fileID: 114000010161641370}
+  - 114: {fileID: 114000013664894104}
+  - 114: {fileID: 114000012323579872}
+  - 114: {fileID: 114000013549056598}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -181,7 +184,7 @@ Rigidbody:
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 1
-  m_Constraints: 84
+  m_Constraints: 116
   m_CollisionDetection: 1
 --- !u!64 &64000011730859142
 MeshCollider:
@@ -235,6 +238,77 @@ MonoBehaviour:
   heldShieldCollider: {fileID: 64000012830298534}
   playerCollider: {fileID: 135000011304649570}
   pushTrigger: {fileID: 64000011730859142}
+--- !u!114 &114000012323579872
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1000011451498484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1768714887, guid: 870353891bb340e2b2a9c8707e7419ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_TransformSyncMode: 3
+  m_SendInterval: 0.1
+  m_SyncRotationAxis: 7
+  m_RotationSyncCompression: 0
+  m_SyncSpin: 0
+  m_MovementTheshold: 0.001
+  m_SnapThreshold: 5
+  m_InterpolateRotation: 1
+  m_InterpolateMovement: 1
+--- !u!114 &114000013549056598
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1000011451498484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1267208747, guid: 870353891bb340e2b2a9c8707e7419ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Target: {fileID: 4000011020113216}
+  m_ChildIndex: 0
+  m_SendInterval: 0.1
+  m_SyncRotationAxis: 2
+  m_RotationSyncCompression: 0
+  m_MovementThreshold: 0.001
+  m_InterpolateRotation: 0.5
+  m_InterpolateMovement: 0.5
+--- !u!114 &114000013664894104
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1000011451498484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 372142912, guid: 870353891bb340e2b2a9c8707e7419ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_SceneId:
+    m_Value: 0
+  m_AssetId:
+    i0: 245
+    i1: 71
+    i2: 217
+    i3: 152
+    i4: 94
+    i5: 111
+    i6: 53
+    i7: 212
+    i8: 184
+    i9: 239
+    i10: 139
+    i11: 146
+    i12: 191
+    i13: 9
+    i14: 9
+    i15: 190
+  m_ServerOnly: 0
+  m_LocalPlayerAuthority: 1
 --- !u!135 &135000011304649570
 SphereCollider:
   m_ObjectHideFlags: 1

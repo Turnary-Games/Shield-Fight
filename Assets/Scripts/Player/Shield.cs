@@ -1,10 +1,14 @@
 ﻿using UnityEngine;
-using System.Collections;
+using UnityEngine.Networking;
+using System.Collections.Generic;
 
-public class Shield : MonoBehaviour {
+public class Shield : NetworkBehaviour {
 
-	[System.NonSerialized]
-	public Player owner;
+	[HideInInspector]
+	[SyncVar]
+	public int owner_id;
+	private Player _owner;
+	public Player owner { get { _owner = _owner ?? new List<Player>(FindObjectsOfType<Player>()).Find(p => p.player == owner_id); return _owner; } }
 	[System.NonSerialized]
 	public Rigidbody body;
 
@@ -19,7 +23,6 @@ public class Shield : MonoBehaviour {
 	public float minSpeed = 10;
 	public float minY = 0;
 	public float maxY = 1;
-
 	[Header("Partycles")]
 	public GameObject particlePrefab;
 
@@ -30,13 +33,16 @@ public class Shield : MonoBehaviour {
 	[System.NonSerialized]
 	public bool attracting = false;
 
-	void Start() {
-		if (!owner || !body) {
-			Destroy(gameObject);
-			return;
-		}
-		
+	void Awake() {
+		body = GetComponent<Rigidbody>();
+	}
+
+	public override void OnStartClient() {
 		start = Time.time;
+
+		// Set layer
+		foreach (var t in GetComponentsInChildren<Transform>())
+			t.gameObject.layer = owner.LAYER_THROWN_SHIELD;
 
 		// Spawn in model
 		owner.resources.RESOURCE_SHIELD_THROWN_MODEL.Clone().transform.SetParent(transform, false);
@@ -65,7 +71,7 @@ public class Shield : MonoBehaviour {
 			}
 		}
 		#endregion
-
+		
 		#region Keep constant speed
 		// Depending on how long shield has flown
 		if (!doneBouncing)
@@ -89,12 +95,13 @@ public class Shield : MonoBehaviour {
 		var player = main.GetComponent<Player>();
 
 		if (player != null && player != owner) {
-
-
 			// Check if we collided with the player collider, not the shield
 			if (col.collider == player.playerCollider) {
-				player.health--;
-				owner.PickupShield();
+
+				if (!isLocalPlayer) {
+					player.health--;
+					owner.CmdPickupShield();
+				}
 
 				// Collided with player, TIME FOR PARTYCLES
 				GameObject clone = Instantiate(particlePrefab, transform.position, Quaternion.Euler(0, body.velocity.zx().ToDegrees(), 0)) as GameObject;
