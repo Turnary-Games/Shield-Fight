@@ -7,10 +7,10 @@ public class Popup {
 	public int selectedItemIndex = 0;
 
 	// Represents whether the popup selections are visible (active)
-	private bool isVisible = false;
+	public bool isVisible = false;
 
 	// Represents whether the popup button is clicked once to expand the popup selections
-	private bool isClicked = false;
+	public bool isClicked = false;
 
 	// If multiple Popup objects exist, this static variable represents the active instance, or a Popup object whose selection is currently expanded
 	private static Popup current;

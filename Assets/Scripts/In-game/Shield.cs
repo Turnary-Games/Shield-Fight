@@ -7,8 +7,6 @@ public class Shield : NetworkBehaviour {
 	[HideInInspector]
 	[SyncVar]
 	public int owner_id;
-	private Player _owner;
-	public Player owner { get { _owner = _owner ?? new List<Player>(FindObjectsOfType<Player>()).Find(p => p.player == owner_id); return _owner; } }
 	[System.NonSerialized]
 	public Rigidbody body;
 
@@ -28,17 +26,20 @@ public class Shield : NetworkBehaviour {
 
 	private int bounces;
 	private float start;
-	private bool doneBouncing = false;
-
-	[System.NonSerialized]
-	public bool attracting = false;
+	[SyncVar]
+	public bool doneBouncing = false;
+	private Player owner;
+	[HideInInspector]
+	[SyncVar]
+	public Vector3 forward;
 
 	void Awake() {
 		body = GetComponent<Rigidbody>();
 	}
 
 	public override void OnStartClient() {
-		start = Time.time;
+
+		owner = Player.GetFromPlayerID(owner_id);
 
 		// Set layer
 		foreach (var t in GetComponentsInChildren<Transform>())
@@ -48,11 +49,23 @@ public class Shield : NetworkBehaviour {
 		owner.resources.RESOURCE_SHIELD_THROWN_MODEL.Clone().transform.SetParent(transform, false);
 	}
 
+	public override void OnStartServer() {
+		start = Time.time;
+		body.velocity = forward * speed / body.mass;
+		owner = owner ?? Player.GetFromPlayerID(owner_id);
+
+		if (!isClient) {
+			// Set layer
+			foreach (var t in GetComponentsInChildren<Transform>())
+				t.gameObject.layer = owner.LAYER_THROWN_SHIELD;
+		}
+	}
+	
 	void FixedUpdate() {
 		#region Move towards player
 		if (doneBouncing) {
-			attracting = Input.GetButton(owner.INPUT_FIRE) || Input.GetButton(owner.INPUT_PUSH);
-			if (attracting) {
+			
+			if (owner.attracting && !owner.dead) {
 				// Calculate drag
 				body.drag = Mathf.MoveTowards(body.drag, 0, Time.deltaTime * dragAtLastBounce);
 
@@ -79,33 +92,41 @@ public class Shield : NetworkBehaviour {
 			body.velocity = body.velocity.normalized * speed / body.mass;
 		#endregion
 	}
-
+	
 	void Update() {
-		if (!doneBouncing && bounces < maxNumberOfBounces && Time.time - start < maxTime)
+		if (!isServer) return;
+		if (!doneBouncing && (bounces > maxNumberOfBounces || Time.time - start > maxTime))
 			doneBouncing = true;
 
 		// Set Y position depending on current speed
 		transform.position = transform.position.new_y(Mathf.Lerp(minY, maxY, body.velocity.magnitude / (minSpeed / body.mass)));
-	}
 
+		if (!owner.dead) {
+			if (doneBouncing && (owner.transform.position - transform.position).new_y(0).magnitude <= owner.pickupRange) {
+				NetworkServer.Destroy(gameObject);
+				owner.CmdPickupShield();
+			}
+		}
+	}
+	
 	void OnCollisionEnter(Collision col) {
+		if (!isServer) return;
 		bounces++;
 
 		var main = col.collider.GetMainObject();
 		var player = main.GetComponent<Player>();
 
-		if (player != null && player != owner) {
+		if (player != null && player.player != owner_id) {
 			// Check if we collided with the player collider, not the shield
 			if (col.collider == player.playerCollider) {
 
-				if (!isLocalPlayer) {
-					player.health--;
-					owner.CmdPickupShield();
-				}
+				player.CmdKill();
+				owner.CmdPickupShield();
+
+				NetworkServer.Destroy(gameObject);
 
 				// Collided with player, TIME FOR PARTYCLES
-				GameObject clone = Instantiate(particlePrefab, transform.position, Quaternion.Euler(0, body.velocity.zx().ToDegrees(), 0)) as GameObject;
-				Destroy(clone, 2);
+				owner.CmdPartycles(col.contacts[0].point, new Vector3(0, body.velocity.zx().ToDegrees(), 0));
 			}
 
 			// Check if we collided with the held shield, not the player body
@@ -114,5 +135,10 @@ public class Shield : NetworkBehaviour {
 			//}
 		}
 	}
-	
+
+	#region Server-side only methods
+	#endregion
+
+	#region Client-side only methods
+	#endregion
 }

@@ -221,6 +221,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3146879d3ee68ee41bfe842c696e98e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  HOST_ID: 0
   player: 1
   health: 20
   speed: 60
@@ -231,13 +232,11 @@ MonoBehaviour:
     type: 2}
   shieldCenter: {fileID: 4000011020113216}
   pickupRange: 2
-  pushCooldown: 0.5
-  pushImpulseVsShield: 75
-  pushImpulseVsPlayer: 400
-  pushImpulseVsOther: 200
   heldShieldCollider: {fileID: 64000012830298534}
   playerCollider: {fileID: 135000011304649570}
   pushTrigger: {fileID: 64000011730859142}
+  team: 0
+  dead: 1
 --- !u!114 &114000012323579872
 MonoBehaviour:
   m_ObjectHideFlags: 1

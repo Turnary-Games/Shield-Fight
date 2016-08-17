@@ -122,6 +122,8 @@ MonoBehaviour:
   maxY: 1
   particlePrefab: {fileID: 1000012195085678, guid: 2244dfb23eb192046aa18e9baf642052,
     type: 2}
+  doneBouncing: 0
+  forward: {x: 0, y: 0, z: 0}
 --- !u!114 &114000010358134594
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -173,4 +175,4 @@ MonoBehaviour:
     i14: 33
     i15: 107
   m_ServerOnly: 0
-  m_LocalPlayerAuthority: 1
+  m_LocalPlayerAuthority: 0

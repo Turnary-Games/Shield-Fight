@@ -22,7 +22,7 @@ GameObject:
   - 198: {fileID: 198000010680383690}
   - 199: {fileID: 199000012572407814}
   m_Layer: 0
-  m_Name: shieldHitParticles
+  m_Name: Shield hit particles
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

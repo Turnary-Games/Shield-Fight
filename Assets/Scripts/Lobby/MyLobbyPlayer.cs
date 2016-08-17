@@ -4,7 +4,12 @@ using System.Collections.Generic;
 
 public class MyLobbyPlayer : NetworkLobbyPlayer {
 
+	public int playerID = -1;
 	public Popup inputPopup = new Popup();
+	public Popup teamPopup = new Popup();
+	[HideInInspector]
+	[SyncVar]
+	public int team;
 
 	// This is a hook that is invoked on all player objects when entering the lobby.
 	// Note: isLocalPlayer is not guaranteed to be set until OnStartLocalPlayer is called.
@@ -13,19 +18,18 @@ public class MyLobbyPlayer : NetworkLobbyPlayer {
 		myLobbyManager.isAddingPlayer = false;
 
 		// Take the one that isn't taken
-		List<int> free = new List<int>();
-		for (int i=0; i<Globals.Input.DROPDOWN.Length; i++) {
-			free.Add(i);
-		}
+		List<int> freeInput = new List<int>();
+		for (int i = 0; i < Globals.Input.DROPDOWN.Length; i++)
+			freeInput.Add(i);
 
-		for (int i=0; i<myLobbyManager.lobbySlots.Length; i++) {
+		for (int i = 0; i < myLobbyManager.lobbySlots.Length; i++) {
 			var player = myLobbyManager.lobbySlots[i] as MyLobbyPlayer;
 			if (player != null && player.isLocalPlayer && player != this) {
-				free.Remove(player.inputPopup.selectedItemIndex);
+				freeInput.Remove(player.inputPopup.selectedItemIndex);
 			}
 		}
 
-		inputPopup.selectedItemIndex = free.Count > 0 ? free[0] : 0;
+		inputPopup.selectedItemIndex = freeInput.Count > 0 ? freeInput[0] : 0;
 	}
 
 	// This is a hook that is invoked on all player objects when exiting the lobby.

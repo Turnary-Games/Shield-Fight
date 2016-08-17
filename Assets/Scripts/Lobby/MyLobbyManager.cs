@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Networking;
 using System.Collections;
+using System.Collections.Generic;
 
 public class MyLobbyManager : NetworkLobbyManager {
 	
@@ -47,7 +48,7 @@ public class MyLobbyManager : NetworkLobbyManager {
 						tex.Apply();
 						s.normal.background = tex;
 
-						GUI.Box(new Rect(220 + i * w, 300, w - 40, w - 40), GUIContent.none, s);
+						GUI.Box(new Rect(220 + i * w, 350, w - 40, w - 40), GUIContent.none, s);
 					}
 
 					style.normal.textColor = player.isLocalPlayer ? Color.green : Color.cyan;
@@ -60,10 +61,26 @@ public class MyLobbyManager : NetworkLobbyManager {
 						}
 
 						boxStyle = new GUIStyle(GUI.skin.button);
+						
+						if (LobbySettings.instance.customTeams) {
+							int lastVal = player.teamPopup.selectedItemIndex;
+							player.teamPopup.List(new Rect(200 + i * w, 280, w, 20), Globals.Players.TEAMS, boxStyle, listStyle);
+							player.team = player.teamPopup.selectedItemIndex;
+							// Team changed, tell erryone to readyup again
+							if (lastVal != player.team) {
+								for (int j=0; j<lobbySlots.Length; j++) {
+									if (lobbySlots[j])
+										lobbySlots[j].SendNotReadyToBeginMessage();
+								}
+							}
+						}
+						
 						player.inputPopup.List(new Rect(200 + i * w, 260, w, 20), Globals.Input.DROPDOWN, boxStyle, listStyle);
 					} else {
 						style.normal.textColor = player.readyToBegin ? Color.green : Color.red;
 						GUI.Label(new Rect(200 + i * w, 240, w, 20), player.readyToBegin ? "Is ready!" : "Isn't ready", style);
+						if (LobbySettings.instance.customTeams)
+							GUI.Label(new Rect(200 + i * w, 280, w, 20), Globals.Players.TEAMS[player.team]);
 					}
 
 					if (player.isLocalPlayer || player.isServer) {
@@ -89,15 +106,23 @@ public class MyLobbyManager : NetworkLobbyManager {
 						isAddingPlayer = true;
 						TryToAddPlayer();
 					}
+					GUI.backgroundColor = Color.white;
 				}
 			}
+			if (state == LobbyState.Hosting) {
+				if (GUI.Button(new Rect(440, 175, 100, 20), "Teams: " + (LobbySettings.instance.customTeams ? "On" : "Off")))
+					LobbySettings.instance.customTeams = !LobbySettings.instance.customTeams;
+			} else {
+				GUI.Label(new Rect(440, 175, 100, 20), "Teams: " + (LobbySettings.instance.customTeams ? "On" : "Off"), style);
+			}
+			
 		}
 	}
-	
+
 	#region Called by server
 	// This is called on the host when a host is started.
 	public override void OnLobbyStartHost() {
-
+		
 	}
 	// This is called on the host when the host is stopped.
 	public override void OnLobbyStopHost() {
@@ -152,11 +177,19 @@ public class MyLobbyManager : NetworkLobbyManager {
 	// > gamePlayer: The game player object.
 	// < return bool: False to not allow this player to replace the lobby player.
 	private int serverPlayerID;
+	private int serverHost;
 	public override bool OnLobbyServerSceneLoadedForPlayer(GameObject lobbyPlayer, GameObject gamePlayer) {
-		var script = gamePlayer.GetComponent<Player>();
-		script.player = serverPlayerID = serverPlayerID + 1;
-		script.input = lobbyPlayer.GetComponent<MyLobbyPlayer>().inputPopup.selectedItemIndex + 1;
+		var gamePlayerScript = gamePlayer.GetComponent<Player>();
+		var lobbyPlayerScript = lobbyPlayer.GetComponent<MyLobbyPlayer>();
+
+		gamePlayerScript.HOST_ID = serverHost;
+		gamePlayerScript.player = lobbyPlayerScript.playerID;
+		gamePlayerScript.input = lobbyPlayerScript.inputPopup.selectedItemIndex + 1;
+
+		gamePlayerScript.transform.position = SpawnPoints.GetSpawningPosition(gamePlayerScript.player, numPlayers).new_y(1);
 		
+		gamePlayerScript.team = lobbyPlayerScript.teamPopup.selectedItemIndex;
+
 		return base.OnLobbyServerSceneLoadedForPlayer(lobbyPlayer, gamePlayer);
 	}
 	// This is called on the server when all the players in the lobby are ready.
@@ -169,11 +202,64 @@ public class MyLobbyManager : NetworkLobbyManager {
 			if (lobbySlots[i] != null && !lobbySlots[i].readyToBegin) return;
 
 		serverPlayerID = 0;
+		serverHost = 0;
+		Player.playersLoaded = new bool[numPlayers];
+
+		// Take the one that isn't taken
+		List<int> freeTeam = new List<int>();
+		int[] usedTeams = new int[Globals.Players.TEAMS.Length];
+		for (int i = 1; i < Globals.Players.TEAMS.Length; i++)
+			freeTeam.Add(i);
+
+		for (int i = 0; i < lobbySlots.Length; i++) {
+			var player = lobbySlots[i] as MyLobbyPlayer;
+			if (player != null) {
+				freeTeam.Remove(player.team);
+			}
+		}
+
+		// Check whos the host
+		for (int i = 0; i < lobbySlots.Length; i++) {
+			if (lobbySlots[i] != null) {
+				var p = lobbySlots[i] as MyLobbyPlayer;
+
+				p.playerID = serverPlayerID = serverPlayerID + 1;
+				if (serverHost == 0 && p.isLocalPlayer) serverHost = p.playerID;
+
+				// If team == <No team> then get an unique team
+				if (p.team == 0) {
+					p.team = freeTeam.Count > 0 ? freeTeam.Pop(0) : 1;
+				}
+				p.teamPopup.selectedItemIndex = p.team;
+
+				usedTeams[p.team]++;
+			}
+		}
+
+		// Check so we don't have everyone on same team
+		for (int i=0; i<usedTeams.Length; i++) {
+			if (usedTeams[i] == numPlayers)
+				return;
+		}
+		
 		ServerChangeScene(playScene);
+	}
+
+	// Called on the server when a client adds a new player with ClientScene.AddPlayer.
+	// The default implementation for this function creates a new player object from the playerPrefab.
+	// > conn: Connection from client.
+	// > playerControllerId: Id of the new player.
+	public override void OnServerAddPlayer(NetworkConnection conn, short playerControllerId) {
+		base.OnServerAddPlayer(conn, playerControllerId);
+
+		for (int i = 0; i < lobbySlots.Length; i++) {
+			var player = lobbySlots[i] as MyLobbyPlayer;
+			if (player && player.readyToBegin) player.SendNotReadyToBeginMessage();
+		}
 	}
 	#endregion
 
-	#region Called by client
+	#region Client-side only methods
 	// This is a hook to allow custom behaviour when the game client enters the lobby.
 	public override void OnLobbyClientEnter() {
 		if (state != LobbyState.Hosting)

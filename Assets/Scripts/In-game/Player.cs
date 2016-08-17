@@ -2,10 +2,16 @@
 using UnityEngine.Networking;
 using System.Collections;
 using ResourceDatabase;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(Rigidbody))]
 public class Player : NetworkBehaviour {
 
+	[HideInInspector]
+	[SyncVar]
+	public int HOST_ID;
+	Player HOST;
+	
 	/*
 		CONSTANTS
 	*/
@@ -19,9 +25,9 @@ public class Player : NetworkBehaviour {
 	public string INPUT_FIRE { get {						return INPUT_PREFIX + "Fire";											} }
 	public string INPUT_PUSH { get {						return INPUT_PREFIX + "Push";											} }
 
-	public int LAYER_PLAYER { get {							return LayerMask.NameToLayer("Player " + player);						} }
-	public int LAYER_HELD_SHIELD { get {					return LayerMask.NameToLayer("Shield " + player);						} }
-	public int LAYER_THROWN_SHIELD { get {					return LayerMask.NameToLayer("Player " + player);						} }
+	public int LAYER_PLAYER { get {							return LayerMask.NameToLayer("Player " + team);							} }
+	public int LAYER_HELD_SHIELD { get {					return LayerMask.NameToLayer("Shield " + team);							} }
+	public int LAYER_THROWN_SHIELD { get {					return LayerMask.NameToLayer("Player " + team);							} }
 
 	public bool initialized { get {							return resources != null && resources.PLAYER_ID == player;				} }
 
@@ -38,30 +44,37 @@ public class Player : NetworkBehaviour {
 	[Header("Movement")]
 	public float speed = 1200;
 	public LayerMask raycastLayer = 1;
-	[System.NonSerialized]
-	public int input = 1;
 	[Header("Shield")]
 	public GameObject shieldPrefab;
 	public Transform shieldCenter;
 	public float pickupRange = 2;
-	[Header("Pushing")]
-	public float pushCooldown = .5f;
-	public float pushImpulseVsShield = 75f;
-	public float pushImpulseVsPlayer = 200f;
-	public float pushImpulseVsOther = 200f;
 	[Header("Collision colliders collisions collide")]
 	public Collider heldShieldCollider;
 	public Collider playerCollider;
 	public Collider pushTrigger;
 
+	[System.NonSerialized]
+	public int input = 1;
+	[HideInInspector]
+	[SyncVar]
+	public int team = 0;
+	[HideInInspector]
+	[SyncVar]
+	public bool dead = true;
+	//[HideInInspector]
+	[SyncVar]
+	public bool attracting = false;
+
+	private static bool everyoneLoaded = false;
+	public static bool[] playersLoaded;
+
 	/*
 		PRIVATE VARIABLES
 	*/
-	private Rigidbody body;
-	private Shield shield;
+	[System.NonSerialized]
+	public Rigidbody body;
 	private bool armed { get { return heldShieldCollider.enabled; } }
-	private bool inRange = true;
-	private float pushTimestamp = -Mathf.Infinity;
+	//private float pushTimestamp = -Mathf.Infinity;
 	private ParticleSystem pushParticles;
 
 	/*
@@ -74,37 +87,37 @@ public class Player : NetworkBehaviour {
 	}
 #endif
 
-	public override void OnStartClient() { 
+	public override void OnStartClient() {
 		InitializePlayer();
+
+		//if (isLocalPlayer)
+			StartCoroutine(WaitTilEveryoneLoaded());
 	}
 
 	public override void OnStartServer() {
+		
 		// In case of standalone server
 		if (!isClient)
 			InitializePlayer();
 	}
 
+	IEnumerator WaitTilEveryoneLoaded() {
+		HOST = GetFromPlayerID(HOST_ID);
+		do {
+			HOST.CmdPlayerLoaded(player);
+			yield return new WaitForSeconds(.5f);
+		} while (!everyoneLoaded);
+		if (this == HOST) GameCountdown.instance.CmdStartCountdown();
+	}
+
 	void Awake() {
 		body = GetComponent<Rigidbody>();
-		transform.position = transform.position.new_y(1);
+		transform.position = transform.position.new_y(-10);
 	}
 	
 	void Update () {
 		if (!initialized) return;
 		if (!isLocalPlayer) return;
-
-		#region Movement
-		// Cant move while attracting
-		if (shield == null || !shield.attracting) {
-			// Real simple; read input, add force from input.
-			Vector2 axis = new Vector2(Input.GetAxisRaw(INPUT_MOVE_HORIZTONAL), Input.GetAxisRaw(INPUT_MOVE_VERTICAL));
-			axis.Scale(axis.normalized.Abs());
-
-			Vector3 movement = axis.xzy(0) * speed * Time.deltaTime;
-
-			body.AddForce(movement, ForceMode.VelocityChange);
-		}
-		#endregion
 
 		#region Rotation
 		body.angularVelocity = Vector3.zero;
@@ -119,131 +132,142 @@ public class Player : NetworkBehaviour {
 			}
 		} else {
 			// Rotate using input
-			Vector2 axis = new Vector2(Input.GetAxis(INPUT_LOOK_HORIZTONAL), Input.GetAxis(INPUT_LOOK_VERTICAL));
-			shieldCenter.transform.eulerAngles = new Vector3(0, axis.ToDegrees(), 0);
+			Vector2 lookAxis = new Vector2(Input.GetAxis(INPUT_LOOK_HORIZTONAL), Input.GetAxis(INPUT_LOOK_VERTICAL));
+			shieldCenter.transform.eulerAngles = new Vector3(0, lookAxis.ToDegrees(), 0);
 		}
+		#endregion
+
+		if (dead) return;
+
+		if (isClient) {
+			bool old_attracting = attracting;
+			attracting = Input.GetButton(INPUT_FIRE) || Input.GetButton(INPUT_PUSH);
+			if (attracting != old_attracting) {
+				CmdSetAttracting(attracting);
+			}
+		}
+
+		#region Movement
+		// Cant move while attracting
+		//if (shield == null || !shield.attracting) {
+		// Real simple; read input, add force from input.
+		Vector2 moveAxis = new Vector2(Input.GetAxisRaw(INPUT_MOVE_HORIZTONAL), Input.GetAxisRaw(INPUT_MOVE_VERTICAL));
+			moveAxis.Scale(moveAxis.normalized.Abs());
+
+			Vector3 movement = moveAxis.xzy(0) * speed * Time.deltaTime;
+
+			body.AddForce(movement, ForceMode.VelocityChange);
+		//}
 		#endregion
 
 		#region Shield shooting
 		if (armed && Input.GetButtonDown(INPUT_FIRE)) {
+			heldShieldCollider.enabled = false;
 			CmdShootShield();
 		}
 		#endregion
-
-		#region Pickup shield
-		if (!armed && shield) {
-			bool old = inRange;
-			inRange = (shield.transform.position - transform.position).xz().magnitude <= pickupRange;
-			if (inRange && !old) {
-				CmdPickupShield();
-			}
-		}
-		#endregion
-
-		#region Pushing
-		// Can push if it's off cooldown + shield is not thrown
-		bool canPush = Time.time - pushTimestamp > pushCooldown && armed;
-		if (canPush && Input.GetButtonDown(INPUT_PUSH)) {
-			StartCoroutine(PushCourotine());
-		}
-		#endregion
 	}
-
-	void OnTriggerEnter(Collider other) {
-		// Compared to many, we ignore if someone triggers us
-		if (other.isTrigger) return;
-
-		// Only proceed if it has a rigidbody
-		Rigidbody otherBody = other.attachedRigidbody;
-		if (otherBody) {
-			// Calculate which way to push 'em
-			Vector3 delta = otherBody.transform.position - transform.position;
-			delta.y = 0;
-
-			if (otherBody.GetComponent<Player>())
-				// Push away dat player
-				otherBody.AddForce(delta.normalized * pushImpulseVsPlayer, ForceMode.Impulse);
-			else if (otherBody.GetComponent<Shield>())
-				// Be'gone, foul plate!
-				otherBody.AddForce(delta.normalized * pushImpulseVsShield, ForceMode.Impulse);
-			else
-				// Get away from me unknown scrub!
-				otherBody.AddForce(delta.normalized * pushImpulseVsOther, ForceMode.Impulse);
-		}
-	}
-
-	IEnumerator PushCourotine() {
-		pushTimestamp = Time.time;
-		pushTrigger.enabled = true;
-		pushParticles.Play();
-		yield return new WaitForFixedUpdate();
-		pushTrigger.enabled = false;
-	}
+	
 
 	#region Server-side only methods
 	[Command]
-	void CmdShootShield() {
+	void CmdSetAttracting(bool state) {
+		attracting = state;
+	}
+
+	[Command]
+	public void CmdPickupShield() {
+		heldShieldCollider.enabled = true;
+		RpcPickupShield();
+	}
+
+	[Command]
+	public void CmdShootShield() {
+		if (dead) return;
+
 		GameObject clone = Instantiate(shieldPrefab, shieldCenter.position, shieldCenter.rotation) as GameObject;
 
 		// Add reference to /this/
-		shield = clone.GetComponent<Shield>();
+		var shield = clone.GetComponent<Shield>();
 		shield.owner_id = player;
-
-		// Add force
-		shield.body = clone.GetComponent<Rigidbody>();
-		shield.body.AddForce(shield.transform.forward * shield.speed, ForceMode.Impulse);
+		shield.forward = shieldCenter.forward;
 
 		// Set layer
 		foreach (var t in shield.GetComponentsInChildren<Transform>())
 			t.gameObject.layer = LAYER_THROWN_SHIELD;
 
+		//NetworkServer.SpawnWithClientAuthority(clone, gameObject);
 		NetworkServer.Spawn(clone);
 
 		// Disable protective shield on player
 		heldShieldCollider.enabled = false;
-		RpcDisableHeldShield();
-		RpcShootShield(shield.netId.Value);
+		RpcShootShield();
 	}
 
 	[Command]
-	public void CmdPickupShield() {
-		if (!initialized) return;
-		if (armed) return;
+	public void CmdPartycles(Vector3 position, Vector3 euler) {
+		RpcPartycles(position, euler);
+	}
 
-		NetworkServer.Destroy(shield.gameObject);
-		RpcDestroyShield();
+	[Command]
+	public void CmdKill() {
+		dead = true;
+		RpcDie();
+		GameMatchPoint.instance.CmdOnPlayerDied(player);
+	}
 
-		// Enable protective shield on player
-		heldShieldCollider.enabled = true;
-		RpcEnableHeldShield();
+	[Command]
+	public void CmdPlayerLoaded(int playerID) {
+		if (everyoneLoaded) return;
 
-		shield = null;
-		inRange = true;
+		playersLoaded[playerID - 1] = true;
+
+		for (int i = 0; i < playersLoaded.Length; i++)
+			if (!playersLoaded[i]) return;
+			
+		RpcEveryoneLoaded();
+		GameStats.instance.RpcOnStartClient();
 	}
 	#endregion
 
 	#region Client-side only methods
 	[ClientRpc]
-	void RpcDestroyShield() {
-		if (shield != null) {
-			// Move particlesystem away
-			var ps = shield.GetComponentInChildren<ParticleSystem>();
-			ps.transform.parent = null;
-			var em = ps.emission;
-			em.enabled = false;
-
-			// Self destruct
-			Destroy(ps.gameObject, ps.startLifetime);
-			//Destroy(shield.gameObject);
-			NetworkServer.Destroy(shield.gameObject);
-
-			shield = null;
-		}
-		inRange = true;
+	public void RpcJumpToSpawnpoint() {
+		transform.position = SpawnPoints.GetSpawningPosition(player, FindObjectsOfType<Player>().Length).new_y(1);
+		dead = true;
+		body.velocity = Vector3.zero;
 	}
 
 	[ClientRpc]
-	void RpcDisableHeldShield() {
+	public void RpcDie() {
+		dead = true;
+		transform.position = new Vector3(0, -10, 0);
+		body.velocity = Vector3.zero;
+	}
+
+	[ClientRpc]
+	public void RpcStartGame() {
+		dead = false;
+	}
+
+	[ClientRpc]
+	public void RpcPickupShield() {
+		heldShieldCollider.enabled = true;
+
+		// Enable visual
+		foreach (var ren in shieldCenter.GetComponentsInChildren<MeshRenderer>())
+			ren.enabled = true;
+
+		foreach (var ps2 in shieldCenter.GetComponentsInChildren<ParticleSystem>()) {
+			if (ps2.transform.IsChildOf(pushTrigger.transform)) continue;
+
+			var em2 = ps2.emission;
+			em2.enabled = true;
+		}
+	}
+
+	[ClientRpc]
+	public void RpcShootShield() {
 		heldShieldCollider.enabled = false;
 
 		// Disable visual
@@ -260,24 +284,14 @@ public class Player : NetworkBehaviour {
 	}
 
 	[ClientRpc]
-	void RpcEnableHeldShield() {
-		heldShieldCollider.enabled = true;
-
-		// Enable visual
-		foreach (var ren in shieldCenter.GetComponentsInChildren<MeshRenderer>())
-			ren.enabled = true;
-
-		foreach (var ps2 in shieldCenter.GetComponentsInChildren<ParticleSystem>()) {
-			if (ps2.transform.IsChildOf(pushTrigger.transform)) continue;
-
-			var em2 = ps2.emission;
-			em2.enabled = true;
-		}
+	public void RpcPartycles(Vector3 position, Vector3 euler) {
+		GameObject clone = GameObject.Instantiate(resources.RESOURCE_SHIELD_HIT_PARTICLES, position, Quaternion.Euler(euler)) as GameObject;
+		Destroy(clone, 2);
 	}
 
 	[ClientRpc]
-	void RpcShootShield(uint shieldId) {
-		shield = ClientScene.FindLocalObject(new NetworkInstanceId(shieldId)).GetComponent<Shield>();
+	public void RpcEveryoneLoaded() {
+		everyoneLoaded = true;
 	}
 	#endregion
 
@@ -344,4 +358,8 @@ public class Player : NetworkBehaviour {
 		return true;
 	}
 	#endregion
+
+	public static Player GetFromPlayerID(int id) {
+		return new List<Player>(FindObjectsOfType<Player>()).Find(p => p.player == id);
+	}
 }
